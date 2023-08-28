@@ -1,0 +1,24 @@
+jellyfin.jericho.cc {
+	reverse_proxy jellyfin:8096
+}
+unmanic.jericho.cc {
+	reverse_proxy unmanic:8888
+}
+jellyseerr.jericho.cc {
+	reverse_proxy jellyseerr:5055
+}
+sonarr.jericho.cc {
+	reverse_proxy sonarr:8989
+}
+radarr.jericho.cc {
+	reverse_proxy radarr:7878
+}
+lidarr.jericho.cc {
+	reverse_proxy lidarr:8686
+}
+prowlarr.jericho.cc {
+	reverse_proxy prowlarr:9696
+}
+transmission.jericho.cc {
+	reverse_proxy transmission:9091
+}

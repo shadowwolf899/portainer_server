@@ -1,0 +1,149 @@
+version: '3.5'
+services:
+  # Reverse proxy
+  caddy:
+    image: docker.io/library/caddy:latest
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+  # Media server
+  jellyfin:
+    image: docker.io/jellyfin/jellyfin:latest
+    environment:
+      - PUID
+      - PGID
+      - TZ
+    user: 1000:1000
+    ports:
+      - 8096:8096
+    expose:
+      - 8096
+    volumes:
+      - jellyfin-config:/config
+      - jellyfin-cache:/cache
+      - /media:/media
+    restart: 'unless-stopped'
+  # Bulk transcode UI
+  unmanic:
+    image: docker.io/josh5/unmanic:latest
+    environment:
+      - PUID
+      - PGID
+      - TZ
+    expose:
+      - 8888
+    volumes:
+      - unmanic-config:/config
+      - ./tmp_library:/library
+      - encode-cache:/tmp/unmanic
+  # Request new media
+  jellyseerr:
+    image: docker.io/fallenbagel/jellyseerr:latest
+    environment:
+      - PUID
+      - PGID
+      - TZ
+    expose:
+      - 5055
+    volumes:
+      - jellyseerr:/app/config
+  # Track TV shows
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    environment:
+      - PUID
+      - PGID
+      - TZ
+    volumes:
+      - sonarr:/config
+      - /media:/media
+      - downloads:/downloads
+    expose:
+      - 8989
+  # Track movies
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    environment:
+      - PUID
+      - PGID
+      - TZ
+    volumes:
+      - radarr:/config
+      - /media:/media
+      - downloads:/downloads
+    expose:
+      - 7878
+  # Track music
+  lidarr:
+    image: lscr.io/linuxserver/lidarr:latest
+    environment:
+      - PUID
+      - PGID
+      - TZ
+    volumes:
+      - lidarr:/config
+      - /media:/media
+      - downloads:/downloads
+    expose:
+      - 8686
+  # Add indexers to other *arrs
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    environment:
+      - PUID
+      - PGID
+      - TZ
+    volumes:
+      - prowlarr:/config
+    expose:
+      - 9696
+  # Download torrents (using VPN)
+  transmission:
+    image: docker.io/haugene/transmission-openvpn:latest
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW # for podman
+      - MKNOD # for podman
+    volumes:
+      - downloads:/downloads
+    environment:
+      - PUID
+      - PGID
+      - TZ
+      - OPENVPN_USERNAME
+      - OPENVPN_PASSWORD
+      - OPENVPN_PROVIDER=PIA
+      - OPENVPN_CONFIG=ca_montreal
+      - CREATE_TUN_DEVICE=true
+      - TRANSMISSION_WEB_UI=flood-for-transmission 
+      - TRANSMISSION_RATIO_LIMIT=1
+      - TRANSMISSION_RATIO_LIMIT_ENABLED=true
+      - TRANSMISSION_DOWNLOAD_DIR=/downloads
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+    expose:
+      - 9091
+
+volumes:
+  jellyfin-config:
+  jellyfin-cache:
+  unmanic-config:
+  encode-cache:
+  jellyseerr:
+  caddy_data:
+  caddy_config:
+  prowlarr:
+  lidarr:
+  sonarr:
+  radarr:
+  downloads:
+
+secrets:
+  openvpn_creds:
+    file: ./secrets/openvpn_creds
